@@ -55,3 +55,7 @@ sg/: Manages security groups and rules. Security groups control what traffic is 
 subnet/: Creates subnets inside a VPC. These can be public or private and are defined using CIDR blocks and availability zones.
 
 vpc/: Creates the Virtual Private Cloud (VPC), which is the core of the AWS networking setup. Other resources like subnets, EC2, and gateways are built inside the VPC.
+
+![Screenshot 2025-05-23 001447](https://github.com/user-attachments/assets/5c300699-ae56-43d3-b9bb-21f194ed2384)
+![Screenshot 2025-05-23 001801](https://github.com/user-attachments/assets/469727b1-a4a6-4b23-87da-e6587de2b1c4)
+![Screenshot 2025-05-23 002027](https://github.com/user-attachments/assets/6a712109-820d-4113-9cef-8872b09ef526)
