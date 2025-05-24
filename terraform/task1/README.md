@@ -54,11 +54,14 @@ terraform init
 
 Check the execution plan
 terraform plan
-![Screenshot 2025-05-22 232752](https://github.com/user-attachments/assets/e42010c2-b575-445c-acc6-50c8ee8e2d0b)
-![Screenshot 2025-05-22 232805](https://github.com/user-attachments/assets/d6092daa-c5aa-42f3-a517-e1c5d3ca78df)
 
 Apply the configuration to launch your EC2 instance
 terraform apply -auto-approve
 
 To delete the resources when you're done
 terraform destroy -auto-approve
+
+![Screenshot 2025-05-22 232752](https://github.com/user-attachments/assets/e42010c2-b575-445c-acc6-50c8ee8e2d0b)
+![Screenshot 2025-05-22 232805](https://github.com/user-attachments/assets/d6092daa-c5aa-42f3-a517-e1c5d3ca78df)
+
+
