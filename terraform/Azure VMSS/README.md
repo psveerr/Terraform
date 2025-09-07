@@ -7,6 +7,19 @@ Features
 
 Creation of a Resource Group, Virtual Network, Subnet, and Network Security Group.
 
+main.tf
+<img width="484" height="981" alt="Screenshot from 2025-09-07 23-39-48" src="https://github.com/user-attachments/assets/ed09e535-4373-4d26-8ad4-b636e85310dc" />
+
+outputs.tf
+<img width="1685" height="543" alt="Screenshot from 2025-09-07 23-39-59" src="https://github.com/user-attachments/assets/7ff5a05d-6fb0-42fc-8926-c9cb47dd3e43" />
+
+provider.tf
+<img width="1685" height="543" alt="Screenshot from 2025-09-07 23-40-08" src="https://github.com/user-attachments/assets/43e1f89e-537b-41b1-afef-87ed8662e749" />
+
+variables.tf
+<img width="1698" height="792" alt="Screenshot from 2025-09-07 23-40-16" src="https://github.com/user-attachments/assets/5acb537b-3a72-4803-b14e-68426ec25ad8" />
+
+
 Deployment of a Linux Virtual Machine Scale Set with manual upgrade mode and auto-scaling based on CPU usage.
 
 SSH-based authentication for VMSS to enhance security.
