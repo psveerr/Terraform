@@ -1,150 +1,63 @@
-Azure Application Gateway Deployment with Terraform
+Azure Application Gateway Deployment Summary
 
-This document summarizes the configuration and deployment of an Azure Application Gateway (v2 SKU) using Terraform. The primary goals of this deployment are to implement SSL Offloading and Path-Based Routing.
+This document summarizes the configuration and deployment of an Azure Application Gateway (v2 SKU) using Terraform. The primary goals of this deployment were to successfully implement SSL Offloading (HTTPS termination) and Path-Based Routing for traffic distribution.
 1. Architecture Overview
 
-The configuration provisions the following key components:
+The configuration provisions a Standard_v2 SKU Application Gateway with 2 instances. This gateway relies on a robust networking foundation built in the meow-rg Resource Group:
 
-    SKU: Standard_v2 (2 instances)
+    Virtual Network (meow-vn): Uses the address space 10.254.0.0/16.
 
-    Networking: A Virtual Network (meow-vn) with two dedicated subnets:
+    Dedicated Subnets: Two separate subnets were provisioned for security and best practice:
 
-        meow-subnet-agw: Dedicated to the Application Gateway.
+        meow-subnet-agw (10.254.0.0/24): Dedicated solely to the Application Gateway.
 
-        meow-subnet-backend: Dedicated to hosting backend server IPs (10.254.1.x).
+        meow-subnet-backend (10.254.1.0/24): Dedicated to hosting the backend server IPs (10.254.1.x).
 
-    Frontend: A Standard SKU Public IP address is used to receive external traffic on HTTPS (Port 443).
+    Frontend IP: A Standard SKU Public IP is used to receive external traffic on HTTPS (Port 443).
 
-    Security: Uses a self-signed PFX certificate for SSL Offloading and enforces modern security standards via an explicit TLS policy.
+    Security: The setup uses a self-signed PFX certificate for SSL Offloading and enforces modern security standards via an explicit TLS policy.
 
 2. Implemented Features
 A. SSL Offloading (HTTPS Termination)
 
-The Application Gateway terminates the HTTPS connection, decrypting the traffic using a provided PFX certificate, and then communicates with the backend servers via unencrypted HTTP (Port 80).
+SSL Offloading is configured to terminate the encrypted connection at the Application Gateway, relieving the backend servers of the decryption load.
 
-Component
-	
+    The frontend_port is set to port 443 to listen for encrypted external traffic.
 
-Configuration
-	
+    The ssl_certificate block uses the filebase64("selfsigned.pfx") function to upload the PFX file containing the certificate and private key.
 
-Purpose
+    The http_listener uses protocol = "Https" to bind the certificate to the public listener.
 
-frontend_port
-	
+    The backend_http_settings uses protocol = "Http" to ensure traffic from the AGW to the backend servers is sent unencrypted, completing the offloading process.
 
-port = 443
-	
-
-Listens for encrypted external traffic.
-
-ssl_certificate
-	
-
-Uses filebase64("selfsigned.pfx")
-	
-
-Uploads the necessary PFX (certificate + private key).
-
-http_listener
-	
-
-protocol = "Https"
-	
-
-Binds the certificate to the public listener.
-
-backend_http_settings
-	
-
-protocol = "Http"
-	
-
-Traffic from the AGW to the backend servers is unencrypted (offloading complete).
 B. Path-Based Routing
 
-Traffic is distributed to three distinct backend pools based on the URL path requested:
+Traffic is intelligently distributed to three distinct backend pools based on the URL path requested:
 
-Target Pool
-	
+    /web/* traffic is directed to the web-pool (Backend IP: 10.254.1.11).
 
-Backend IP Address
-	
+    /api/* traffic is directed to the api-pool (Backend IP: 10.254.1.12).
 
-URL Path Rule
+    Any other path (the catch-all) is directed to the default-pool (Backend IP: 10.254.1.10).
 
-web-pool
-	
-
-10.254.1.11
-	
-
-/path1/
-
-api-pool
-	
-
-10.254.1.12
-	
-
-/path2/
-
-default-pool
-	
-
-10.254.1.10
-	
-
-(Default catch-all)
 3. Critical Fixes Required During Deployment
 
-The initial code required several crucial fixes to successfully pass Azure's validation checks and deployment requirements:
+Several non-obvious fixes were necessary to overcome Azure validation errors:
 
-Issue Encountered
-	
+    Networking Failure: The initial single subnet caused a failure because backend IPs were outside its range. The fix was adding a dedicated azurerm_subnet.backend_subnet (10.254.1.0/24).
 
-Root Cause
-	
+    Public IP SKU Mismatch: The Application Gateway V2 SKU requires a Standard SKU Public IP. This was fixed by adding sku = "Standard" to the azurerm_public_ip resource.
 
-Terraform Fix Applied
+    PFX File Encoding Error: Terraform requires binary files like PFX to be read with the filebase64() function, not file(). This corrected the data format sent to Azure.
 
-Networking Failure
-	
+    Deprecated TLS Policy Error (400 Bad Request): To resolve Azure's rejection of the default security policy, an explicit ssl_policy block was added to enforce a minimum protocol version of TLSv1_2, bypassing the security rejection.
 
-Backend IPs (10.254.1.x) were outside the single defined subnet range (10.254.0.x).
-	
-
-Added a dedicated azurerm_subnet.backend_subnet with the 10.254.1.0/24 address space.
-
-Public IP SKU Mismatch
-	
-
-AGW V2 requires Standard SKU, but the default Public IP SKU is Basic.
-	
-
-Added sku = "Standard" to the azurerm_public_ip resource.
-
-PFX File Encoding Error
-	
-
-Using base64encode(file(...)) on a binary PFX file causes a UTF-8 error.
-	
-
-Changed the syntax to the binary-safe data = filebase64("selfsigned.pfx").
-
-Deprecated TLS Policy Error (400 Bad Request)
-	
-
-Azure blocks deployment if the default, insecure SSL policy (AppGwSslPolicy20150501) is implied.
-	
-
-Added the ssl_policy block to enforce a minimum protocol version of TLSv1_2, bypassing the security rejection.
 4. Testing
 
 To verify the deployment:
 
-    Get IP: Run az network public-ip show --resource-group meow-rg --name meow-pub-ip --query ipAddress --output tsv.
+    Get Public IP: Run az network public-ip show --resource-group meow-rg --name meow-pub-ip --query ipAddress --output tsv.
 
-    Test Access: Open https://[IP_ADDRESS]/ and accept the self-signed certificate warning.
+    Test Access: Open https://[IP_ADDRESS]/ in a browser and accept the self-signed certificate warning.
 
-    Test Routing: Verify the routing by checking paths like https://[IP_ADDRESS]/api/status and https://[IP_ADDRESS]/web/index. (Note: These will return 502 Bad Gateway until backend servers are deployed).
+    Test Routing: Verify the path routing by accessing specific URLs like https://[IP_ADDRESS]/api/status (should hit the api-pool) and https://[IP_ADDRESS]/web/dashboard (should hit the web-pool).
